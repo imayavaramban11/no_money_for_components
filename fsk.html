@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FSK Virtual Lab - PTU</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.27.0/plotly.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f0f4f8; display: flex; flex-direction: column; height: 100vh; }
+        .header { background: linear-gradient(135deg, #1a5490 0%, #2d7ab8 100%); color: white; padding: 15px 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .header h1 { font-size: 22px; margin-bottom: 5px; font-weight: 600; }
+        .header h2 { font-size: 16px; font-weight: normal; opacity: 0.95; }
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+        .sidebar { width: 220px; background: white; box-shadow: 2px 0 8px rgba(0,0,0,0.1); overflow-y: auto; }
+        .nav-item { padding: 14px 25px; cursor: pointer; color: #333; font-size: 15px; border-left: 4px solid transparent; transition: all 0.3s; }
+        .nav-item:hover { background: #e8f1f8; color: #1a5490; }
+        .nav-item.active { background: #e8f1f8; color: #1a5490; border-left-color: #1a5490; font-weight: 600; }
+        .content-area { flex: 1; overflow-y: auto; background: #f0f4f8; }
+        .content-section { display: none; padding: 30px; }
+        .content-section.active { display: block; }
+        .content-card, .simulation-panel { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 25px; margin-bottom: 20px; }
+        h3 { color: #1a5490; margin-bottom: 20px; font-size: 24px; }
+        h4 { color: #2d7ab8; margin-top: 20px; margin-bottom: 12px; font-size: 18px; }
+        p, li { line-height: 1.7; color: #444; margin-bottom: 10px; text-align: justify; }
+        ul { margin-left: 25px; margin-bottom: 15px; }
+        .controls-section { background: #f8fafc; padding: 20px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
+        .controls-title { color: #1a5490; font-size: 16px; font-weight: 600; margin-bottom: 15px; }
+        .control-row { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; align-items: flex-end; }
+        .control-group { display: flex; flex-direction: column; gap: 6px; min-width: 120px; }
+        .control-group label { font-size: 12px; font-weight: 600; color: #334155; }
+        .control-group input, .control-group select { padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; width: 100%; }
+        .control-group.small { min-width: 100px; }
+        .btn-group { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+        .btn { padding: 9px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.3s; }
+        .btn-primary { background: #1a5490; color: white; }
+        .btn-primary:hover { background: #2d7ab8; }
+        .btn-secondary { background: #64748b; color: white; }
+        .btn-secondary:hover { background: #475569; }
+        .btn-success { background: #059669; color: white; }
+        .btn-success:hover { background: #047857; }
+        .btn-info { background: #0891b2; color: white; }
+        .btn-info:hover { background: #0e7490; }
+        .oscilloscope-controls { background: #f1f5f9; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #cbd5e1; }
+        .osc-controls-title { color: #1a5490; font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+        .osc-control-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+        .osc-control-item { display: flex; align-items: center; gap: 8px; }
+        .osc-control-item label { font-size: 11px; color: #475569; min-width: 70px; }
+        .osc-control-item select, .osc-control-item input { flex: 1; padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; }
+        .plot-container { background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .plot-title { color: #1a5490; font-size: 14px; font-weight: 600; margin-bottom: 10px; padding: 8px 12px; background: #f1f5f9; border-radius: 4px; border-left: 4px solid #1a5490; }
+        .result-summary { background: #f0fdf4; border: 2px solid #86efac; border-radius: 8px; padding: 20px; margin-top: 20px; }
+        .result-summary h4 { color: #166534; font-size: 16px; margin-bottom: 15px; }
+        .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .result-item { background: white; padding: 12px; border-radius: 6px; border-left: 3px solid #10b981; }
+        .result-label { font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
+        .result-value { font-size: 18px; color: #059669; font-weight: 700; }
+        .question { background: #f8fafc; padding: 20px; margin: 15px 0; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .question h4 { color: #1a5490; margin-bottom: 12px; margin-top: 0; }
+        .options label { display: block; padding: 12px; margin: 8px 0; background: white; border-radius: 4px; cursor: pointer; border: 1px solid #e2e8f0; }
+        .options label:hover { background: #e8f1f8; }
+        .reference-item { background: #f8fafc; padding: 18px; margin: 12px 0; border-radius: 6px; border-left: 4px solid #1a5490; }
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 600; color: #334155; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 14px; }
+        .form-group textarea { min-height: 120px; }
+        .status-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+        .status-running { background: #10b981; }
+        .status-stopped { background: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>Puducherry Technological University</h1>
+            <h2>Virtual Lab - Frequency Shift Keying (FSK) Modulation & Demodulation</h2>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="nav-item active" onclick="showSection('simulation')">● Simulation</div>
+            <div class="nav-item" onclick="showSection('aim')">● Aim</div>
+            <div class="nav-item" onclick="showSection('theory')">● Theory</div>
+            <div class="nav-item" onclick="showSection('procedure')">● Procedure</div>
+            <div class="nav-item" onclick="showSection('pretest')">● Pre-Test</div>
+            <div class="nav-item" onclick="showSection('posttest')">● Post-Test</div>
+            <div class="nav-item" onclick="showSection('references')">● References</div>
+            <div class="nav-item" onclick="showSection('feedback')">● Feedback</div>
+        </div>
+
+        <div class="content-area">
+            <div id="simulation" class="content-section active">
+                <div class="simulation-panel">
+                    <h3>FSK Simulation</h3>
+                    <div class="controls-section">
+                        <div class="controls-title">Signal Generator</div>
+                        <div class="control-row">
+                            <div class="control-group">
+                                <label>Binary Input (0/1):</label>
+                                <input type="text" id="bitSequence" value="10110100" placeholder="e.g. 10110100">
+                            </div>
+                            <div class="control-group small">
+                                <label>Mark freq f₁ (Hz):</label>
+                                <input type="number" id="freq1" value="1200" min="100" max="5000">
+                            </div>
+                            <div class="control-group small">
+                                <label>Space freq f₂ (Hz):</label>
+                                <input type="number" id="freq2" value="700" min="100" max="5000">
+                            </div>
+                            <div class="control-group small">
+                                <label>Bit rate (bps):</label>
+                                <input type="number" id="bitRate" value="80" min="10" max="1000">
+                            </div>
+                            <div class="control-group small">
+                                <label>Amplitude (V):</label>
+                                <input type="number" id="amplitude" value="1" min="0.1" max="5" step="0.1">
+                            </div>
+                            <div class="control-group small">
+                                <label>Sample rate (Hz):</label>
+                                <input type="number" id="sampleRate" value="8000" min="1000" max="50000" step="1000">
+                            </div>
+                        </div>
+                        <div class="control-row">
+                            <div class="control-group small">
+                                <label>SNR (dB):</label>
+                                <input type="number" id="snr" value="30" min="0" max="60">
+                            </div>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-primary" onclick="generateSignal()">Generate Signal</button>
+                            <button class="btn btn-success" onclick="runSimulation()">Run</button>
+                            <button class="btn btn-info" onclick="stopSimulation()">Stop</button>
+                            <button class="btn btn-secondary" onclick="resetSimulation()">Reset</button>
+                        </div>
+                    </div>
+
+                    <div class="oscilloscope-controls">
+                        <div class="osc-controls-title">Oscilloscope Controls</div>
+                        <div class="osc-control-grid">
+                            <div class="osc-control-item">
+                                <label>Time / Div (s):</label>
+                                <select id="timeDiv" onchange="updatePlots()">
+                                    <option value="0.01">0.01</option>
+                                    <option value="0.02" selected>0.02</option>
+                                    <option value="0.05">0.05</option>
+                                    <option value="0.1">0.1</option>
+                                </select>
+                            </div>
+                            <div class="osc-control-item">
+                                <label>CH1 V/Div:</label>
+                                <select id="ch1VDiv" onchange="updatePlots()">
+                                    <option value="0.5">0.5</option>
+                                    <option value="1" selected>1</option>
+                                    <option value="1.5">1.5</option>
+                                    <option value="2">2</option>
+                                </select>
+                            </div>
+                            <div class="osc-control-item">
+                                <label>CH2 V/Div:</label>
+                                <select id="ch2VDiv" onchange="updatePlots()">
+                                    <option value="0.5">0.5</option>
+                                    <option value="1" selected>1</option>
+                                    <option value="1.5">1.5</option>
+                                    <option value="2">2</option>
+                                </select>
+                            </div>
+                            <div class="osc-control-item">
+                                <label>CH3 V/Div:</label>
+                                <select id="ch3VDiv" onchange="updatePlots()">
+                                    <option value="0.5">0.5</option>
+                                    <option value="1" selected>1</option>
+                                    <option value="1.5">1.5</option>
+                                    <option value="2">2</option>
+                                </select>
+                            </div>
+                            <div class="osc-control-item">
+                                <label>CH4 V/Div:</label>
+                                <select id="ch4VDiv" onchange="updatePlots()">
+                                    <option value="0.5">0.5</option>
+                                    <option value="1" selected>1</option>
+                                    <option value="1.5">1.5</option>
+                                    <option value="2">2</option>
+                                </select>
+                            </div>
+                            <div class="osc-control-item">
+                                <label>Trigger level (V):</label>
+                                <input type="number" id="triggerLevel" value="0" step="0.1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="plot-container">
+                        <div class="plot-title">Input bits:</div>
+                        <div id="digitalSignal" style="width: 100%; height: 300px;"></div>
+                    </div>
+
+                    <div class="plot-container">
+                        <div class="plot-title">Carrier signals:</div>
+                        <div id="carrierSignal" style="width: 100%; height: 300px;"></div>
+                    </div>
+
+                    <div class="plot-container">
+                        <div class="plot-title">FSK Modulated signal:</div>
+                        <div id="modulatedSignal" style="width: 100%; height: 300px;"></div>
+                    </div>
+
+                    <div class="plot-container">
+                        <div class="plot-title">Demodulated bits:</div>
+                        <div id="demodulatedSignal" style="width: 100%; height: 300px;"></div>
+                    </div>
+
+                    <div class="result-summary">
+                        <h4>📊 Result Summary</h4>
+                        <div class="result-grid">
+                            <div class="result-item">
+                                <div class="result-label">Input Bits</div>
+                                <div class="result-value" id="resultInputBits">-</div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-label">Demodulated Bits</div>
+                                <div class="result-value" id="resultDemodBits">-</div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-label">Bit Error Rate</div>
+                                <div class="result-value" id="resultBER">-</div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-label">Frequency Deviation</div>
+                                <div class="result-value" id="resultFreqDev">-</div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-label">Modulation Index</div>
+                                <div class="result-value" id="resultModIndex">-</div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-label">Bandwidth (Hz)</div>
+                                <div class="result-value" id="resultBandwidth">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="aim" class="content-section">
+                <div class="content-card">
+                    <h3>Aim</h3>
+                    <p>To study Frequency Shift Keying (FSK) modulation and demodulation techniques.</p>
+                    <h4>Objectives:</h4>
+                    <ul>
+                        <li>Understand FSK modulation principles and how binary data is represented using different frequencies</li>
+                        <li>Generate FSK signals from binary data and observe the frequency transitions</li>
+                        <li>Implement FSK demodulation using correlation-based detection</li>
+                        <li>Analyze the effect of noise on FSK signal transmission</li>
+                        <li>Calculate important parameters like modulation index, bandwidth, and bit error rate</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div id="theory" class="content-section">
+                <div class="content-card">
+                    <h3>Theory</h3>
+                    <h4>Introduction to FSK</h4>
+                    <p>Frequency Shift Keying (FSK) is a digital modulation technique where the frequency of the carrier signal varies according to the digital signal being transmitted. In binary FSK, two distinct frequencies represent binary 0 and binary 1.</p>
+                    
+                    <h4>FSK Mathematical Representation</h4>
+                    <p>For binary FSK, the modulated signal can be represented as:</p>
+                    <p>s(t) = A·cos(2πf₁t) for binary '1'</p>
+                    <p>s(t) = A·cos(2πf₂t) for binary '0'</p>
+                    <p>where A is the amplitude, f₁ is the mark frequency (binary 1), and f₂ is the space frequency (binary 0).</p>
+                    
+                    <h4>Key Parameters</h4>
+                    <ul>
+                        <li><strong>Frequency Deviation (Δf):</strong> |f₁ - f₂| - the difference between the two carrier frequencies</li>
+                        <li><strong>Modulation Index (h):</strong> Δf / bit rate - determines spectral efficiency</li>
+                        <li><strong>Bandwidth:</strong> Approximately 2(Δf + bit rate) using Carson's rule</li>
+                    </ul>
+                    
+                    <h4>FSK Demodulation</h4>
+                    <p>FSK signals can be demodulated using coherent or non-coherent detection methods. This simulation uses correlation-based coherent detection, where the received signal is correlated with reference carriers at f₁ and f₂ frequencies to determine which bit was transmitted.</p>
+                    
+                    <h4>Applications</h4>
+                    <ul>
+                        <li>Caller ID systems</li>
+                        <li>Radio teletype (RTTY)</li>
+                        <li>Low-speed modems</li>
+                        <li>RFID systems</li>
+                        <li>Wireless sensor networks</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div id="procedure" class="content-section">
+                <div class="content-card">
+                    <h3>Procedure</h3>
+                    <h4>Step-by-Step Instructions:</h4>
+                    <ol style="margin-left: 25px;">
+                        <li><strong>Enter Binary Sequence:</strong> Type your desired binary sequence (e.g., 10110100) in the Binary Input field. Only 0s and 1s are allowed.</li>
+                        <li><strong>Set Carrier Frequencies:</strong>
+                            <ul>
+                                <li>Set Mark frequency f₁ (for binary 1) - typically higher frequency</li>
+                                <li>Set Space frequency f₂ (for binary 0) - typically lower frequency</li>
+                            </ul>
+                        </li>
+                        <li><strong>Configure Parameters:</strong>
+                            <ul>
+                                <li>Set bit rate (bps) - determines symbol duration</li>
+                                <li>Set amplitude (V) - signal amplitude</li>
+                                <li>Set sample rate (Hz) - should be at least 2× highest frequency</li>
+                                <li>Set SNR (dB) - signal-to-noise ratio for channel simulation</li>
+                            </ul>
+                        </li>
+                        <li><strong>Generate Signal:</strong> Click "Generate Signal" button to create the FSK modulated signal.</li>
+                        <li><strong>Run Simulation:</strong> Click "Run" to start the simulation and see all waveforms.</li>
+                        <li><strong>Adjust Oscilloscope:</strong> Use oscilloscope controls to adjust time base and voltage scales for better visualization.</li>
+                        <li><strong>Analyze Results:</strong> Review the Result Summary section for calculated parameters and performance metrics.</li>
+                        <li><strong>Experiment:</strong> Try different bit sequences, frequencies, and SNR values to observe their effects.</li>
+                        <li><strong>Reset:</strong> Click "Reset" to clear all plots and start over.</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div id="pretest" class="content-section">
+                <div class="content-card">
+                    <h3>Pre-Test</h3>
+                    <div class="question"><h4>Q1: FSK stands for?</h4><div class="options"><label><input type="radio" name="q1" value="a"> Frequency Signal Keying</label><label><input type="radio" name="q1" value="b"> Frequency Shift Keying</label><label><input type="radio" name="q1" value="c"> Fast Shift Keying</label></div></div>
+                    <div class="question"><h4>Q2: How many frequencies are used in binary FSK?</h4><div class="options"><label><input type="radio" name="q2" value="a"> One</label><label><input type="radio" name="q2" value="b"> Two</label><label><input type="radio" name="q2" value="c"> Three</label></div></div>
+                    <div class="question"><h4>Q3: What parameter varies in FSK modulation?</h4><div class="options"><label><input type="radio" name="q3" value="a"> Amplitude</label><label><input type="radio" name="q3" value="b"> Frequency</label><label><input type="radio" name="q3" value="c"> Phase</label></div></div>
+                    <div class="question"><h4>Q4: Mark frequency typically represents?</h4><div class="options"><label><input type="radio" name="q4" value="a"> Binary 0</label><label><input type="radio" name="q4" value="b"> Binary 1</label><label><input type="radio" name="q4" value="c"> Either bit</label></div></div>
+                    <div class="question"><h4>Q5: A major advantage of FSK is?</h4><div class="options"><label><input type="radio" name="q5" value="a"> Variable envelope</label><label><input type="radio" name="q5" value="b"> Constant envelope</label><label><input type="radio" name="q5" value="c"> No envelope</label></div></div>
+                    <div class="question"><h4>Q6: Space frequency is used for?</h4><div class="options"><label><input type="radio" name="q6" value="a"> Binary 1</label><label><input type="radio" name="q6" value="b"> Binary 0</label><label><input type="radio" name="q6" value="c"> Synchronization</label></div></div>
+                    <div class="question"><h4>Q7: FSK is classified as?</h4><div class="options"><label><input type="radio" name="q7" value="a"> Analog modulation</label><label><input type="radio" name="q7" value="b"> Digital modulation</label><label><input type="radio" name="q7" value="c"> Hybrid modulation</label></div></div>
+                    <div class="question"><h4>Q8: Continuous phase FSK prevents?</h4><div class="options"><label><input type="radio" name="q8" value="a"> Amplitude jumps</label><label><input type="radio" name="q8" value="b"> Phase discontinuities</label><label><input type="radio" name="q8" value="c"> Frequency drift</label></div></div>
+                    <div class="question"><h4>Q9: FSK bandwidth is approximately?</h4><div class="options"><label><input type="radio" name="q9" value="a"> Δf + bit rate</label><label><input type="radio" name="q9" value="b"> 2(Δf + bit rate)</label><label><input type="radio" name="q9" value="c"> 3×bit rate</label></div></div>
+                    <div class="question"><h4>Q10: FSK is commonly used in?</h4><div class="options"><label><input type="radio" name="q10" value="a"> Video transmission</label><label><input type="radio" name="q10" value="b"> Caller ID systems</label><label><input type="radio" name="q10" value="c"> Satellite TV</label></div></div>
+                    <button class="btn btn-primary" onclick="checkPreTest()">Submit Pre-Test</button>
+                    <div id="preTestResult" style="margin-top: 15px; padding: 15px; border-radius: 6px; display: none;"></div>
+                </div>
+            </div>
+
+            <div id="posttest" class="content-section">
+                <div class="content-card">
+                    <h3>Post-Test</h3>
+                    <div class="question"><h4>Q1: In FSK, binary 1 is represented using?</h4><div class="options"><label><input type="radio" name="pq1" value="a"> f₂</label><label><input type="radio" name="pq1" value="b"> f₁</label><label><input type="radio" name="pq1" value="c"> f₁+f₂</label></div></div>
+                    <div class="question"><h4>Q2: Frequency deviation is calculated as?</h4><div class="options"><label><input type="radio" name="pq2" value="a"> f₁ + f₂</label><label><input type="radio" name="pq2" value="b"> |f₁ - f₂|</label><label><input type="radio" name="pq2" value="c"> f₁ × f₂</label></div></div>
+                    <div class="question"><h4>Q3: FSK demodulation primarily detects?</h4><div class="options"><label><input type="radio" name="pq3" value="a"> Frequency changes</label><label><input type="radio" name="pq3" value="b"> Amplitude changes</label><label><input type="radio" name="pq3" value="c"> Phase changes</label></div></div>
+                    <div class="question"><h4>Q4: FSK signal envelope is?</h4><div class="options"><label><input type="radio" name="pq4" value="a"> Variable</label><label><input type="radio" name="pq4" value="b"> Constant</label><label><input type="radio" name="pq4" value="c"> Zero</label></div></div>
+                    <div class="question"><h4>Q5: A common application of FSK is?</h4><div class="options"><label><input type="radio" name="pq5" value="a"> HD Video</label><label><input type="radio" name="pq5" value="b"> Caller ID</label><label><input type="radio" name="pq5" value="c"> Wi-Fi</label></div></div>
+                    <div class="question"><h4>Q6: Modulation index h is defined as?</h4><div class="options"><label><input type="radio" name="pq6" value="a"> f₁/f₂</label><label><input type="radio" name="pq6" value="b"> Δf/bit rate</label><label><input type="radio" name="pq6" value="c"> bit rate/Δf</label></div></div>
+                    <div class="question"><h4>Q7: MSK (Minimum Shift Keying) has modulation index h=?</h4><div class="options"><label><input type="radio" name="pq7" value="a"> 1.0</label><label><input type="radio" name="pq7" value="b"> 0.5</label><label><input type="radio" name="pq7" value="c"> 2.0</label></div></div>
+                    <div class="question"><h4>Q8: Compared to ASK, FSK typically needs?</h4><div class="options"><label><input type="radio" name="pq8" value="a"> Less bandwidth</label><label><input type="radio" name="pq8" value="b"> More bandwidth</label><label><input type="radio" name="pq8" value="c"> Same bandwidth</label></div></div>
+                    <div class="question"><h4>Q9: Non-coherent FSK detection is?</h4><div class="options"><label><input type="radio" name="pq9" value="a"> Simpler than coherent</label><label><input type="radio" name="pq9" value="b"> More complex</label><label><input type="radio" name="pq9" value="c"> Impossible</label></div></div>
+                    <div class="question"><h4>Q10: GFSK (Gaussian FSK) uses?</h4><div class="options"><label><input type="radio" name="pq10" value="a"> Square filter</label><label><input type="radio" name="pq10" value="b"> Gaussian filter</label><label><input type="radio" name="pq10" value="c"> Butterworth filter</label></div></div>
+                    <button class="btn btn-primary" onclick="checkPostTest()">Submit Post-Test</button>
+                    <div id="postTestResult" style="margin-top: 15px; padding: 15px; border-radius: 6px; display: none;"></div>
+                </div>
+            </div>
+
+            <div id="references" class="content-section">
+                <div class="content-card">
+                    <h3>References</h3>
+                    <div class="reference-item"><strong>Textbooks:</strong><ul>
+                        <li>Simon Haykin, "Communication Systems", 5th Ed, Wiley</li>
+                        <li>B.P. Lathi, "Modern Digital and Analog Communication Systems", 4th Ed, Oxford University Press</li>
+                        <li>John G. Proakis & Masoud Salehi, "Digital Communications", McGraw-Hill</li>
+                        <li>Herbert Taub & Donald L. Schilling, "Principles of Communication Systems", McGraw-Hill</li>
+                    </ul></div>
+                    <div class="reference-item"><strong>Online Resources:</strong><ul>
+                        <li>MIT OpenCourseWare - Digital Communications</li>
+                        <li>NPTEL Lectures on Communication Systems by IIT professors</li>
+                        <li>IEEE Xplore Digital Library - Research papers on FSK</li>
+                        <li>All About Circuits - FSK Modulation Tutorial</li>
+                    </ul></div>
+                    <div class="reference-item"><strong>Standards & Protocols:</strong><ul>
+                        <li>ITU-T Recommendations for FSK in telecommunications</li>
+                        <li>IEEE 802.15.4 (ZigBee physical layer uses FSK)</li>
+                        <li>Bell 202 Standard for 1200 baud FSK modems</li>
+                    </ul></div>
+                </div>
+            </div>
+
+            <div id="feedback" class="content-section">
+                <div class="content-card">
+                    <h3>Feedback</h3>
+                    <p>We appreciate your feedback to help improve this virtual lab experience.</p>
+                    <div class="form-group"><label>Name:</label><input type="text" id="feedbackName" placeholder="Enter your name"></div>
+                    <div class="form-group"><label>Email:</label><input type="email" id="feedbackEmail" placeholder="Enter your email"></div>
+                    <div class="form-group"><label>Rating:</label><select id="feedbackRating"><option value="5">5 - Excellent</option><option value="4">4 - Good</option><option value="3">3 - Average</option><option value="2">2 - Below Average</option><option value="1">1 - Poor</option></select></div>
+                    <div class="form-group"><label>Comments:</label><textarea id="feedbackComments" placeholder="Share your experience, suggestions, or report any issues..."></textarea></div>
+                    <button class="btn btn-primary" onclick="submitFeedback()">Submit Feedback</button>
+                    <div id="feedbackResult" style="margin-top: 15px; padding: 15px; border-radius: 6px; display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let simulationData = {};
+        let isRunning = false;
+        let animationFrame = null;
+        let plotlyLoaded = false;
+
+        // Wait for Plotly to load
+        window.addEventListener('load', function() {
+            if (typeof Plotly !== 'undefined') {
+                plotlyLoaded = true;
+                console.log('Plotly loaded successfully');
+            } else {
+                console.error('Plotly failed to load');
+                alert('Error: Plotting library failed to load. Please refresh the page.');
+            }
+        });
+
+        // Navigation function
+        function showSection(sectionId) {
+            const sections = document.querySelectorAll('.content-section');
+            const navItems = document.querySelectorAll('.nav-item');
+            
+            sections.forEach(s => s.classList.remove('active'));
+            navItems.forEach(n => n.classList.remove('active'));
+            
+            document.getElementById(sectionId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Generate FSK Signal
+        function generateSignal() {
+            if (!plotlyLoaded || typeof Plotly === 'undefined') {
+                alert('Plotting library is still loading. Please wait a moment and try again.');
+                return;
+            }
+
+            const bits = document.getElementById('bitSequence').value;
+            const f1 = parseFloat(document.getElementById('freq1').value);
+            const f2 = parseFloat(document.getElementById('freq2').value);
+            const amp = parseFloat(document.getElementById('amplitude').value);
+            const bitRate = parseFloat(document.getElementById('bitRate').value);
+            const sampleRate = parseFloat(document.getElementById('sampleRate').value);
+            const snr = parseFloat(document.getElementById('snr').value);
+
+            if (!/^[01]+$/.test(bits)) {
+                alert('Please enter valid binary sequence (0s and 1s only)');
+                return;
+            }
+
+            const bitDuration = 1 / bitRate;
+            const samplesPerBit = Math.floor(sampleRate * bitDuration);
+            const totalSamples = bits.length * samplesPerBit;
+            
+            const time = [];
+            const digitalSignal = [];
+            const carrierF1 = [];
+            const carrierF2 = [];
+            const fskSignal = [];
+            
+            // Generate continuous-phase FSK
+            let cumulativePhase = 0;
+            
+            for (let bitIndex = 0; bitIndex < bits.length; bitIndex++) {
+                const bit = parseInt(bits[bitIndex]);
+                const freq = bit === 1 ? f1 : f2;
+                
+                // Generate samples for this bit
+                for (let i = 0; i < samplesPerBit; i++) {
+                    const globalIndex = bitIndex * samplesPerBit + i;
+                    const t = globalIndex / sampleRate;
+                    time.push(t);
+                    
+                    digitalSignal.push(bit * amp);
+                    carrierF1.push(amp * Math.sin(2 * Math.PI * f1 * t));
+                    carrierF2.push(amp * Math.sin(2 * Math.PI * f2 * t));
+                    
+                    // Continuous phase FSK with phase accumulation
+                    const instantaneousPhase = cumulativePhase + 2 * Math.PI * freq * (i / sampleRate);
+                    fskSignal.push(amp * Math.sin(instantaneousPhase));
+                }
+                
+                // Update cumulative phase for next bit (ensures phase continuity)
+                cumulativePhase += 2 * Math.PI * freq * bitDuration;
+            }
+            
+            // Create clean copy for display
+            const cleanFSK = fskSignal.slice();
+            
+            // Add noise only for demodulation testing
+            const noisyFSK = addNoise(fskSignal.slice(), snr);
+            const demodulated = demodulateFSK(noisyFSK, f1, f2, sampleRate, samplesPerBit, bits.length, amp);
+            
+            simulationData = {
+                time, bits, digitalSignal, carrierF1, carrierF2,
+                fskSignal: cleanFSK, // Display clean signal
+                noisyFSK: noisyFSK,  // Use noisy for demod
+                demodulated, samplesPerBit,
+                f1, f2, amp, bitRate, sampleRate
+            };
+            
+            plotDigitalSignal();
+            plotCarrierSignals();
+            plotModulatedSignal();
+            plotDemodulatedSignal();
+            updateResultSummary();
+            
+            alert('Signal generated successfully! Click "Run" to see the simulation.');
+        }
+
+        // Add noise to signal
+        function addNoise(signal, snrDB) {
+            const snrLinear = Math.pow(10, snrDB / 10);
+            const signalPower = signal.reduce((sum, val) => sum + val * val, 0) / signal.length;
+            const noisePower = signalPower / snrLinear;
+            const noiseStd = Math.sqrt(noisePower);
+            
+            return signal.map(val => val + (Math.random() - 0.5) * 2 * noiseStd);
+        }
+
+        // FSK Demodulation
+        function demodulateFSK(signal, f1, f2, sampleRate, samplesPerBit, numBits, amp) {
+            const demodBits = [];
+            const demodSignal = [];
+            
+            for (let i = 0; i < numBits; i++) {
+                const start = i * samplesPerBit;
+                const end = start + samplesPerBit;
+                const segment = signal.slice(start, end);
+                
+                let corr1 = 0, corr2 = 0;
+                for (let j = 0; j < segment.length; j++) {
+                    const t = (start + j) / sampleRate;
+                    corr1 += segment[j] * Math.sin(2 * Math.PI * f1 * t);
+                    corr2 += segment[j] * Math.sin(2 * Math.PI * f2 * t);
+                }
+                
+                const bit = Math.abs(corr1) > Math.abs(corr2) ? 1 : 0;
+                demodBits.push(bit);
+                
+                for (let j = 0; j < samplesPerBit; j++) {
+                    demodSignal.push(bit * amp);
+                }
+            }
+            
+            return { bits: demodBits.join(''), signal: demodSignal };
+        }
+
+        // Plot Digital Signal
+        function plotDigitalSignal() {
+            if (typeof Plotly === 'undefined') {
+                console.error('Plotly not available');
+                return;
+            }
+            
+            const { time, digitalSignal, bits, samplesPerBit, amp, sampleRate } = simulationData;
+            
+            const annotations = bits.split('').map((bit, i) => ({
+                x: (i * samplesPerBit + samplesPerBit / 2) / sampleRate,
+                y: amp * 1.3,
+                text: bit,
+                showarrow: false,
+                font: { size: 16, color: '#00ff00', family: 'Arial Black' }
+            }));
+            
+            const trace = {
+                x: time,
+                y: digitalSignal,
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: '#00ff00', width: 3, shape: 'hv' },
+                name: 'Digital Input'
+            };
+            
+            const layout = {
+                xaxis: { title: 'Time (s)', gridcolor: '#2d3748', titlefont: { color: '#a0aec0' }, tickfont: { color: '#a0aec0' } },
+                yaxis: { title: 'Amplitude (V)', gridcolor: '#2d3748', titlefont: { color: '#a0aec0' }, tickfont: { color: '#a0aec0' } },
+                annotations: annotations,
+                margin: { l: 50, r: 30, t: 20, b: 50 },
+                plot_bgcolor: '#0a0e1a',
+                paper_bgcolor: '#0a0e1a'
+            };
+            
+            Plotly.newPlot('digitalSignal', [trace], layout, {responsive: true, displayModeBar: true});
+        }
+
+        // Plot Carrier Signals
+        function plotCarrierSignals() {
+            const { time, carrierF1, carrierF2 } = simulationData;
+            
+            const trace1 = {
+                x: time,
+                y: carrierF1,
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: '#fbbf24', width: 2 },
+                name: 'f₁ (Mark)'
+            };
+            
+            const trace2 = {
+                x: time,
+                y: carrierF2,
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: '#60a5fa', width: 2 },
+                name: 'f₂ (Space)'
+            };
+            
+            const layout = {
+                xaxis: { title: 'Time (s)', gridcolor: '#2d3748', titlefont: { color: '#a0aec0' }, tickfont: { color: '#a0aec0' } },
+                yaxis: { title: 'Amplitude (V)', gridcolor: '#2d3748', titlefont: { color: '#a0aec0' }, tickfont: { color: '#a0aec0' } },
+                margin: { l: 50, r: 30, t: 20, b: 50 },
+                plot_bgcolor: '#0a0e1a',
+                paper_bgcolor: '#0a0e1a',
+                showlegend: true,
+                legend: { font: { color: '#a0aec0' } }
+            };
+            
+            Plotly.newPlot('carrierSignal', [trace1, trace2], layout, {responsive: true, displayModeBar: true});
+        }
+
+        // Plot Modulated Signal
+        function plotModulatedSignal() {
+            const { time, fskSignal } = simulationData;
+            
+            const trace = {
+                x: time,
+                y: fskSignal,
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: '#ff00ff', width: 2 },
+                name: 'FSK Signal'
+            };
+            
+            const layout = {
+                xaxis: { title: 'Time (s)', gridcolor: '#2d3748', titlefont: { color: '#a0aec0' }, tickfont: { color: '#a0aec0' } },
+                yaxis: { title: 'Amplitude (V)', gridcolor: '#2d3748', titlefont: { color: '#a0aec0' }, tickfont: { color: '#a0aec0' } },
+                margin: { l: 50, r: 30, t: 20, b: 50 },
+                plot_bgcolor: '#0a0e1a',
+                paper_bgcolor: '#0a0e1a'
+            };
+            
+            Plotly.newPlot('modulatedSignal', [trace], layout, {responsive: true, displayModeBar: true});
+        }
+
+        // Plot Demodulated Signal
+        function plotDemodulatedSignal() {
+            const { time, demodulated, samplesPerBit, amp, sampleRate } = simulationData;
+            
+            const annotations = demodulated.bits.split('').map((bit, i) => ({
+                x: (i * samplesPerBit + samplesPerBit / 2) / sampleRate,
+                y: amp * 1.3,
+                text: bit,
+                showarrow: false,
+                font: { size: 16, color: '#00ffff', family: 'Arial Black' }
+            }));
+            
+            const trace = {
+                x: time,
+                y: demodulated.signal,
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: '#00ffff', width: 3, shape: 'hv' },
+                name: 'Demodulated Output'
+            };
+            
+            const layout = {
+                xaxis: { title: 'Time (s)', gridcolor: '#2d3748', titlefont: { color: '#a0aec0' }, tickfont: { color: '#a0aec0' } },
+                yaxis: { title: 'Amplitude (V)', gridcolor: '#2d3748', titlefont: { color: '#a0aec0' }, tickfont: { color: '#a0aec0' } },
+                annotations: annotations,
+                margin: { l: 50, r: 30, t: 20, b: 50 },
+                plot_bgcolor: '#0a0e1a',
+                paper_bgcolor: '#0a0e1a'
+            };
+            
+            Plotly.newPlot('demodulatedSignal', [trace], layout, {responsive: true, displayModeBar: true});
+        }
+
+        // Update Result Summary
+        function updateResultSummary() {
+            const { bits, demodulated, f1, f2, bitRate } = simulationData;
+            
+            // Calculate BER
+            let errors = 0;
+            for (let i = 0; i < bits.length; i++) {
+                if (bits[i] !== demodulated.bits[i]) errors++;
+            }
+            const ber = (errors / bits.length).toFixed(4);
+            
+            // Calculate parameters
+            const freqDev = Math.abs(f1 - f2);
+            const modIndex = (freqDev / bitRate).toFixed(2);
+            const bandwidth = (2 * (freqDev + bitRate)).toFixed(2);
+            
+            document.getElementById('resultInputBits').textContent = bits;
+            document.getElementById('resultDemodBits').textContent = demodulated.bits;
+            document.getElementById('resultBER').textContent = ber;
+            document.getElementById('resultFreqDev').textContent = freqDev + ' Hz';
+            document.getElementById('resultModIndex').textContent = modIndex;
+            document.getElementById('resultBandwidth').textContent = bandwidth + ' Hz';
+        }
+
+        // Update plots based on oscilloscope controls
+        function updatePlots() {
+            if (Object.keys(simulationData).length > 0) {
+                plotDigitalSignal();
+                plotCarrierSignals();
+                plotModulatedSignal();
+                plotDemodulatedSignal();
+            }
+        }
+
+        // Run Simulation
+        function runSimulation() {
+            if (Object.keys(simulationData).length === 0) {
+                alert('Please generate signal first!');
+                return;
+            }
+            isRunning = true;
+            alert('Simulation is running! All plots are now visible.');
+        }
+
+        // Stop Simulation
+        function stopSimulation() {
+            isRunning = false;
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+            }
+            alert('Simulation stopped.');
+        }
+
+        // Reset Simulation
+        function resetSimulation() {
+            simulationData = {};
+            isRunning = false;
+            
+            // Clear all plots
+            Plotly.purge('digitalSignal');
+            Plotly.purge('carrierSignal');
+            Plotly.purge('modulatedSignal');
+            Plotly.purge('demodulatedSignal');
+            
+            // Reset result summary
+            document.getElementById('resultInputBits').textContent = '-';
+            document.getElementById('resultDemodBits').textContent = '-';
+            document.getElementById('resultBER').textContent = '-';
+            document.getElementById('resultFreqDev').textContent = '-';
+            document.getElementById('resultModIndex').textContent = '-';
+            document.getElementById('resultBandwidth').textContent = '-';
+            
+            alert('Simulation reset successfully!');
+        }
+
+        // Check Pre-Test
+        function checkPreTest() {
+            const answers = {
+                q1: 'b', q2: 'b', q3: 'b', q4: 'b', q5: 'b',
+                q6: 'b', q7: 'b', q8: 'b', q9: 'b', q10: 'b'
+            };
+            
+            let score = 0;
+            let total = Object.keys(answers).length;
+            
+            for (let q in answers) {
+                const selected = document.querySelector(`input[name="${q}"]:checked`);
+                if (selected && selected.value === answers[q]) {
+                    score++;
+                }
+            }
+            
+            const percentage = ((score / total) * 100).toFixed(0);
+            const resultDiv = document.getElementById('preTestResult');
+            resultDiv.style.display = 'block';
+            
+            if (percentage >= 70) {
+                resultDiv.style.background = '#d1fae5';
+                resultDiv.style.border = '2px solid #10b981';
+                resultDiv.innerHTML = `<strong style="color: #059669;">✓ Excellent!</strong> You scored ${score}/${total} (${percentage}%). You have a good understanding of FSK basics.`;
+            } else if (percentage >= 50) {
+                resultDiv.style.background = '#fef3c7';
+                resultDiv.style.border = '2px solid #f59e0b';
+                resultDiv.innerHTML = `<strong style="color: #d97706;">⚠ Good Try!</strong> You scored ${score}/${total} (${percentage}%). Review the theory section and try again.`;
+            } else {
+                resultDiv.style.background = '#fee2e2';
+                resultDiv.style.border = '2px solid #ef4444';
+                resultDiv.innerHTML = `<strong style="color: #dc2626;">✗ Needs Improvement</strong> You scored ${score}/${total} (${percentage}%). Please study the theory section carefully.`;
+            }
+        }
+
+        // Check Post-Test
+        function checkPostTest() {
+            const answers = {
+                pq1: 'b', pq2: 'b', pq3: 'a', pq4: 'b', pq5: 'b',
+                pq6: 'b', pq7: 'b', pq8: 'b', pq9: 'a', pq10: 'b'
+            };
+            
+            let score = 0;
+            let total = Object.keys(answers).length;
+            
+            for (let q in answers) {
+                const selected = document.querySelector(`input[name="${q}"]:checked`);
+                if (selected && selected.value === answers[q]) {
+                    score++;
+                }
+            }
+            
+            const percentage = ((score / total) * 100).toFixed(0);
+            const resultDiv = document.getElementById('postTestResult');
+            resultDiv.style.display = 'block';
+            
+            if (percentage >= 80) {
+                resultDiv.style.background = '#d1fae5';
+                resultDiv.style.border = '2px solid #10b981';
+                resultDiv.innerHTML = `<strong style="color: #059669;">🎉 Outstanding!</strong> You scored ${score}/${total} (${percentage}%). You have mastered FSK concepts!`;
+            } else if (percentage >= 60) {
+                resultDiv.style.background = '#fef3c7';
+                resultDiv.style.border = '2px solid #f59e0b';
+                resultDiv.innerHTML = `<strong style="color: #d97706;">👍 Good Job!</strong> You scored ${score}/${total} (${percentage}%). Keep practicing with the simulation.`;
+            } else {
+                resultDiv.style.background = '#fee2e2';
+                resultDiv.style.border = '2px solid #ef4444';
+                resultDiv.innerHTML = `<strong style="color: #dc2626;">📚 Keep Learning</strong> You scored ${score}/${total} (${percentage}%). Spend more time with the simulation and theory.`;
+            }
+        }
+
+        // Submit Feedback
+        function submitFeedback() {
+            const name = document.getElementById('feedbackName').value;
+            const email = document.getElementById('feedbackEmail').value;
+            const rating = document.getElementById('feedbackRating').value;
+            const comments = document.getElementById('feedbackComments').value;
+            
+            if (!name || !email || !comments) {
+                alert('Please fill in all fields before submitting.');
+                return;
+            }
+            
+            const resultDiv = document.getElementById('feedbackResult');
+            resultDiv.style.display = 'block';
+            resultDiv.style.background = '#d1fae5';
+            resultDiv.style.border = '2px solid #10b981';
+            resultDiv.innerHTML = `<strong style="color: #059669;">✓ Thank you, ${name}!</strong><br>Your feedback (Rating: ${rating}/5) has been recorded. We appreciate your input to improve this virtual lab.`;
+            
+            // Clear form
+            document.getElementById('feedbackName').value = '';
+            document.getElementById('feedbackEmail').value = '';
+            document.getElementById('feedbackComments').value = '';
+            document.getElementById('feedbackRating').value = '5';
+        }
+    </script>
+</body>
+</html>
