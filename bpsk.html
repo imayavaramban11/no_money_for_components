@@ -1,449 +1,606 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>BPSK Virtual Laboratory</title>
-<style>
-/* Basic reset */
-* {
-box-sizing: border-box;
-}
-body {
-margin: 0;
-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-display: flex;
-height: 100vh;
-overflow: hidden;
-background: #f9f9f9;
-color: #222;
-}
-#container {
-display: flex;
-width: 100%;
-height: 100%;
-}
-#leftPanel {
-width: 320px;
-background: #e7e7e7;
-padding: 20px 25px;
-box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-overflow-y: auto;
-}
-#leftPanel h2 {
-margin-top: 0;
-font-weight: 600;
-margin-bottom: 20px;
-font-size: 1.3rem;
-color: #333;
-}
-label {
-display: block;
-font-weight: 600;
-margin-bottom: 6px;
-margin-top: 15px;
-color: #444;
-}
-input[type=text], input[type=number] {
-width: 100%;
-padding: 8px 10px;
-font-size: 1rem;
-border: 1.8px solid #bbb;
-border-radius: 4px;
-transition: border-color 0.2s ease;
-}
-input[type=text]:focus, input[type=number]:focus {
-border-color: #005289;
-outline: none;
-}
-.checkbox-group {
-display: flex;
-align-items: center;
-margin-top: 18px;
-}
-.checkbox-group input[type=checkbox] {
-margin-right: 10px;
-transform: scale(1.3);
-cursor: pointer;
-}
-.slider-container {
-display: flex;
-align-items: center;
-margin-top: 12px;
-gap: 10px;
-}
-input[type=range] {
-flex: 1;
-cursor: pointer;
-}
-#snrValue {
-font-weight: 600;
-min-width: 35px;
-text-align: center;
-}
-#generateBtn {
-margin-top: 28px;
-width: 100%;
-background: #005289;
-color: white;
-border: none;
-padding: 13px;
-font-size: 1.1rem;
-font-weight: 700;
-border-radius: 5px;
-cursor: pointer;
-transition: background-color 0.25s ease;
-}
-#generateBtn:hover {
-background: #003f63;
-}
-#rightPanel {
-flex-grow: 1;
-padding: 15px;
-overflow-y: auto;
-background: #fff;
-display: grid;
-grid-template-columns: repeat(2, 1fr);
-grid-template-rows: repeat(3, 1fr);
-gap: 18px 20px;
-height: 100%;
-}
-.plotlyChart {
-background: #fefefe;
-box-shadow: 0 1px 6px rgba(0,0,0,0.1);
-border-radius: 6px;
-padding: 8px;
-}
-#resultsSummary {
-grid-column: 1 / span 2;
-background: #005289;
-color: #fff;
-padding: 15px 20px;
-border-radius: 6px;
-font-size: 1.1rem;
-font-weight: 600;
-user-select: none;
-}
-/* Scrollbar styling for left panel */
-#leftPanel::-webkit-scrollbar {
-width: 8px;
-}
-#leftPanel::-webkit-scrollbar-thumb {
-background: #a8a8a8;
-border-radius: 4px;
-}
-#leftPanel::-webkit-scrollbar-thumb:hover {
-background: #888;
-}
-@media (max-width: 900px) {
-body {
-flex-direction: column;
-}
-#container {
-flex-direction: column;
-height: auto;
-}
-#leftPanel {
-width: 100%;
-height: auto;
-box-shadow: none;
-padding-bottom: 10px;
-}
-#rightPanel {
-grid-template-columns: 1fr;
-grid-template-rows: none;
-height: auto;
-padding: 10px 10px 30px;
-}
-#resultsSummary {
-font-size: 1rem;
-padding: 12px 15px;
-}
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BPSK Virtual Lab</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.27.0/plotly.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f4f8; margin: 0; }
+        .header { background: linear-gradient(135deg, #22577a 0%, #38a3a5 100%); color: white; padding: 18px 32px; }
+        .header h1 { font-size: 22px; margin-bottom: 7px; font-weight: 600; }
+        .header h2 { font-size: 17px; font-weight: normal; opacity: 0.92; }
+        .main-container { display: flex; min-height: 100vh; }
+        .sidebar { width: 220px; background: white; box-shadow: 2px 0 8px rgba(0,0,0,0.09); }
+        .nav-item { padding: 15px 28px; cursor: pointer; color: #444; font-size: 15px; border-left: 4px solid transparent; transition: all 0.3s; }
+        .nav-item:hover { background: #e7f6f2; color: #22577a;}
+        .nav-item.active { background: #e7f6f2; color: #22577a; border-left-color: #38a3a5; font-weight: 600; }
+        .content-area { flex: 1; background: #f0f4f8; }
+        .content-section { display: none; padding: 34px;}
+        .content-section.active { display: block;}
+        .content-card, .simulation-panel { background: white; border-radius: 9px; box-shadow: 0 2px 8px rgba(0,0,0,0.09); padding: 26px; margin-bottom: 24px;}
+        h3 { color: #22577a; margin-bottom: 20px; font-size: 23px;}
+        h4 { color: #38a3a5; margin-top: 20px; margin-bottom: 12px; font-size: 17px;}
+        p, li { line-height: 1.75; color: #444; margin-bottom: 10px;}
+        ul { margin-left: 25px; margin-bottom: 15px;}
+        .controls-section {background: #f7fafc; padding: 20px; border-radius: 7px; margin-bottom: 20px; border: 1px solid #e0e8ef;}
+        .controls-title {color: #22577a; font-size: 15px; font-weight: 600; margin-bottom: 15px;}
+        .control-row {display: flex; gap: 15px; margin-bottom: 16px;}
+        .control-group {display: flex; flex-direction: column; gap: 7px; min-width: 120px;}
+        .control-group label {font-size: 12px; font-weight: 600; color: #334155;}
+        .control-group input, .control-group select {padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px;}
+        .btn-group {display: flex; gap: 10px; margin-top: 10px;}
+        .btn {padding: 9px 18px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px;}
+        .btn-primary {background: #22577a; color: white;}
+        .btn-primary:hover {background: #38a3a5;}
+        .btn-success {background: #43d07d; color: white;}
+        .btn-success:hover {background: #2ca76a;}
+        .btn-secondary {background: #64748b; color: white;}
+        .btn-secondary:hover {background: #354046;}
+        .plot-container {background: #fff; border-radius: 9px; padding: 15px; margin-bottom: 18px; box-shadow: 0 2px 7px rgba(0,0,0,0.07);}
+        .plot-title {color: #22577a; font-size: 14px; font-weight: 600; margin-bottom: 13px; padding: 7px 10px; background: #f7fafc; border-radius: 4px; border-left: 4px solid #38a3a5;}
+        .result-summary {background: #f0fdf4; border: 2px solid #43d07d; border-radius: 8px; padding: 23px; margin-top: 20px;}
+        .result-summary h4 {color: #22577a;}
+        .result-grid {display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px;}
+        .result-item {background: white; padding: 12px; border-radius: 6px; border-left: 3px solid #43d07d;}
+        .result-label {font-size: 11px; color: #45a29e; text-transform: uppercase; font-weight: 600;}
+        .result-value {font-size: 17px; color: #22577a; font-weight: 700;}
+        .question {background: #f7fafc; padding: 20px; margin: 15px 0; border-radius: 9px; border: 1px solid #e0e8ef;}
+        .question h4 {color: #22577a; margin-bottom: 12px;}
+        .options label {display: block; padding: 12px; margin: 8px 0; background: white; border-radius: 4px; cursor: pointer; border: 1px solid #e0e8ef;}
+        .options label:hover {background: #e7f6f2;}
+        .reference-item {background: #f7fafc; padding: 18px; margin: 12px 0; border-radius: 7px; border-left: 4px solid #38a3a5;}
+        .form-group {margin-bottom: 18px;}
+        .form-group label {display: block; margin-bottom: 7px; font-weight: 600; color: #334155;}
+        .form-group input, .form-group textarea, .form-group select {width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 14px;}
+        .form-group textarea {min-height: 120px;}
+    </style>
 </head>
 <body>
-<div id="container">
-<aside id="leftPanel" role="region" aria-label="Controls">
-<h2>BPSK Virtual Lab</h2>
-<label for="bitSeq">Binary Input Sequence</label>
-<input type="text" id="bitSeq" maxlength="64" value="10110101" pattern="[01]*" title="Only 0
-and 1 allowed" autocomplete="off" aria-describedby="bitSeqHelp"/>
-<small id="bitSeqHelp" style="font-size:0.85rem;color:#666;">Enter bits: 0 or 1 only</small>
-<label for="carrierFreq">Carrier Frequency (Hz)</label>
-<input type="number" id="carrierFreq" min="0.1" step="0.1" value="5" />
-<label for="samplingFreq">Sampling Frequency (Hz)</label>
-<input type="number" id="samplingFreq" min="100" step="1" value="1000" />
-<label for="amplitude">Amplitude (A)</label>
-<input type="number" id="amplitude" min="0.1" step="0.1" value="1" />
-<div class="checkbox-group">
-<input type="checkbox" id="noiseToggle" />
-<label for="noiseToggle" style="margin:0;">Add AWGN Noise</label>
+<div class="header">
+    <h1>Virtual Lab - Binary Phase Shift Keying (BPSK) Modulation & Demodulation</h1>
+    <h2>BPSK: Modulation, Demodulation, Parameters, Pre/Post Test, Learning</h2>
 </div>
-<label for="snrSlider" style="margin-top: 12px; color:#444;">SNR (dB)</label>
-<div class="slider-container">
-<input type="range" id="snrSlider" min="-5" max="20" value="10" step="1" disabled />
-<span id="snrValue">10</span>
+
+<div class="main-container">
+    <div class="sidebar">
+        <div class="nav-item active" onclick="showSection('simulation')">Simulation</div>
+        <div class="nav-item" onclick="showSection('aim')">Aim</div>
+        <div class="nav-item" onclick="showSection('theory')">Theory</div>
+        <div class="nav-item" onclick="showSection('procedure')">Procedure</div>
+        <div class="nav-item" onclick="showSection('pretest')">Pre-Test</div>
+        <div class="nav-item" onclick="showSection('posttest')">Post-Test</div>
+        <div class="nav-item" onclick="showSection('references')">References</div>
+        <div class="nav-item" onclick="showSection('feedback')">Feedback</div>
+    </div>
+    <div class="content-area">
+        <!-- Simulation Section -->
+        <div id="simulation" class="content-section active">
+            <div class="simulation-panel">
+                <h3>BPSK Simulation</h3>
+                <div class="controls-section">
+                    <div class="controls-title">Signal Generator</div>
+                    <div class="control-row">
+                        <div class="control-group">
+                            <label>Binary Input (0/1):</label>
+                            <input type="text" id="bitSequence" value="10101100">
+                        </div>
+                        <div class="control-group">
+                            <label>Carrier freq (Hz):</label>
+                            <input type="number" id="carrierFreq" value="1200" min="100" max="100000">
+                        </div>
+                        <div class="control-group">
+                            <label>Bit rate (bps):</label>
+                            <input type="number" id="bitRate" value="80" min="10" max="10000">
+                        </div>
+                        <div class="control-group">
+                            <label>Amplitude (V):</label>
+                            <input type="number" id="amplitude" value="1" min="0.1" max="5" step="0.1">
+                        </div>
+                        <div class="control-group">
+                            <label>Sample rate (Hz):</label>
+                            <input type="number" id="sampleRate" value="8000" min="1000" max="50000" step="1000">
+                        </div>
+                        <div class="control-group">
+                            <label>SNR (dB):</label>
+                            <input type="number" id="snr" value="30" min="0" max="60">
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="generateSignal()">Generate</button>
+                        <button class="btn btn-success" onclick="runSimulation()">Run</button>
+                        <button class="btn btn-secondary" onclick="resetSimulation()">Reset</button>
+                    </div>
+                </div>
+                <div class="plot-container">
+                    <div class="plot-title">Input bits:</div>
+                    <div id="digitalSignal" style="width:100%;height:250px;"></div>
+                </div>
+                <div class="plot-container">
+                    <div class="plot-title">Carrier Signal:</div>
+                    <div id="carrierSignal" style="width:100%;height:250px;"></div>
+                </div>
+                <div class="plot-container">
+                    <div class="plot-title">BPSK Modulated Signal:</div>
+                    <div id="bpskSignal" style="width:100%;height:250px;"></div>
+                </div>
+                <div class="plot-container">
+                    <div class="plot-title">Demodulated Bits:</div>
+                    <div id="demodulatedSignal" style="width:100%;height:250px;"></div>
+                </div>
+                <div class="result-summary">
+                    <h4>Result Summary</h4>
+                    <div class="result-grid">
+                        <div class="result-item">
+                            <div class="result-label">Input Bits</div>
+                            <div class="result-value" id="resultInputBits">-</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">Demodulated Bits</div>
+                            <div class="result-value" id="resultDemodBits">-</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">Bit Error Rate</div>
+                            <div class="result-value" id="resultBER">-</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">Bandwidth (Hz)</div>
+                            <div class="result-value" id="resultBandwidth">-</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">Modulation Index</div>
+                            <div class="result-value" id="resultModIndex">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Aim Section -->
+        <div id="aim" class="content-section">
+            <div class="content-card">
+                <h3>Aim</h3>
+                <p>To study Binary Phase Shift Keying (BPSK) modulation and demodulation techniques through simulation and analysis.</p>
+                <h4>Objectives:</h4>
+                <ul>
+                    <li>Understand BPSK principles and binary data representation using phase shift.</li>
+                    <li>Generate and visualize BPSK signals for various binary inputs.</li>
+                    <li>Carry out BPSK demodulation and BER analysis under noisy conditions.</li>
+                    <li>Calculate key performance metrics like bandwidth and modulation index.</li>
+                </ul>
+            </div>
+        </div>
+        <!-- Theory Section -->
+        <div id="theory" class="content-section">
+            <div class="content-card">
+                <h3>Theory</h3>
+                <h4>Introduction to BPSK</h4>
+                <p>BPSK is a digital modulation technique that encodes data as two phases of a carrier: typically 0° for binary '1' and 180° for binary '0'.</p>
+                <h4>BPSK Mathematical Representation</h4>
+                <p>s(t) = A &times; cos(2πf<sub>c</sub> t + φ), where φ = 0 for '1', φ = π for '0'</p>
+                <h4>Parameters</h4>
+                <ul>
+                    <li><strong>Bandwidth:</strong> About 2 × bit rate</li>
+                    <li><strong>Modulation Index:</strong> For BPSK, always 1 (π phase shift)</li>
+                </ul>
+                <h4>Demodulation Principle</h4>
+                <p>Demodulation is often done by correlating the received signal with a reference carrier, then making a decision based on the output sign.</p>
+                <h4>Applications</h4>
+                <ul>
+                    <li>Satellite modems</li>
+                    <li>RFID systems</li>
+                    <li>Wireless communications</li>
+                </ul>
+            </div>
+        </div>
+        <!-- Procedure Section -->
+        <div id="procedure" class="content-section">
+            <div class="content-card">
+                <h3>Procedure</h3>
+                <ol>
+                    <li>Enter a binary sequence in the input field.</li>
+                    <li>Set carrier frequency, bit rate, amplitude, and sample rate.</li>
+                    <li>Set SNR for noise simulation.</li>
+                    <li>Click "Generate" to create BPSK signals.</li>
+                    <li>Click "Run" to simulate and display all plots.</li>
+                    <li>Review key metrics in the result summary.</li>
+                    <li>Experiment with input and simulation parameters.</li>
+                </ol>
+            </div>
+        </div>
+        <!-- Pre-Test Section -->
+        <div id="pretest" class="content-section">
+            <div class="content-card">
+                <h3>Pre-Test</h3>
+                <div class="question"><h4>Q1: BPSK stands for?</h4>
+                    <div class="options">
+                        <label><input type="radio" name="q1" value="a"> Binary Phase Shift Keying</label>
+                        <label><input type="radio" name="q1" value="b"> Binary Pulse Shift Keying</label>
+                        <label><input type="radio" name="q1" value="c"> Bit Position Shift Keying</label>
+                    </div>
+                </div>
+                <div class="question"><h4>Q2: How many phase states in BPSK?</h4>
+                    <div class="options">
+                        <label><input type="radio" name="q2" value="a"> Two</label>
+                        <label><input type="radio" name="q2" value="b"> Four</label>
+                        <label><input type="radio" name="q2" value="c"> Eight</label>
+                    </div>
+                </div>
+                <div class="question"><h4>Q3: BPSK modulates which parameter?</h4>
+                    <div class="options">
+                        <label><input type="radio" name="q3" value="a"> Amplitude</label>
+                        <label><input type="radio" name="q3" value="b"> Frequency</label>
+                        <label><input type="radio" name="q3" value="c"> Phase</label>
+                    </div>
+                </div>
+                <div class="question"><h4>Q4: Typical BPSK phase shift for bit '0'?</h4>
+                    <div class="options">
+                        <label><input type="radio" name="q4" value="a"> 0°</label>
+                        <label><input type="radio" name="q4" value="b"> 90°</label>
+                        <label><input type="radio" name="q4" value="c"> 180°</label>
+                    </div>
+                </div>
+                <div class="question"><h4>Q5: BPSK bandwidth is approximately?</h4>
+                    <div class="options">
+                        <label><input type="radio" name="q5" value="a"> Bit rate</label>
+                        <label><input type="radio" name="q5" value="b"> 2 × bit rate</label>
+                        <label><input type="radio" name="q5" value="c"> 0.5 × bit rate</label>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="checkPreTest()">Submit Pre-Test</button>
+                <div id="preTestResult" style="margin-top:16px;padding:14px;border-radius:6px;display:none;"></div>
+            </div>
+        </div>
+        <!-- Post-Test Section -->
+        <div id="posttest" class="content-section">
+            <div class="content-card">
+                <h3>Post-Test</h3>
+                <div class="question"><h4>Q1: For BPSK, bit '1' is represented by?</h4>
+                    <div class="options">
+                        <label><input type="radio" name="pq1" value="a"> 0° phase</label>
+                        <label><input type="radio" name="pq1" value="b"> 180° phase</label>
+                        <label><input type="radio" name="pq1" value="c"> No carrier</label>
+                    </div>
+                </div>
+                <div class="question"><h4>Q2: What is the modulation index for BPSK?</h4>
+                    <div class="options">
+                        <label><input type="radio" name="pq2" value="a"> 0.5</label>
+                        <label><input type="radio" name="pq2" value="b"> 1.0</label>
+                        <label><input type="radio" name="pq2" value="c"> 2.0</label>
+                    </div>
+                </div>
+                <div class="question"><h4>Q3: BPSK is robust against?</h4>
+                    <div class="options">
+                        <label><input type="radio" name="pq3" value="a"> Amplitude noise</label>
+                        <label><input type="radio" name="pq3" value="b"> Phase noise</label>
+                        <label><input type="radio" name="pq3" value="c"> Frequency drift</label>
+                    </div>
+                </div>
+                <div class="question"><h4>Q4: Demodulation by correlation decides by?</h4>
+                    <div class="options">
+                        <label><input type="radio" name="pq4" value="a"> Amplitude</label>
+                        <label><input type="radio" name="pq4" value="b"> Signal sign</label>
+                        <label><input type="radio" name="pq4" value="c"> Bit period</label>
+                    </div>
+                </div>
+                <div class="question"><h4>Q5: BPSK is used in?</h4>
+                    <div class="options">
+                        <label><input type="radio" name="pq5" value="a"> Satellite comms</label>
+                        <label><input type="radio" name="pq5" value="b"> TV broadcast</label>
+                        <label><input type="radio" name="pq5" value="c"> Wired telephony</label>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="checkPostTest()">Submit Post-Test</button>
+                <div id="postTestResult" style="margin-top:16px;padding:14px;border-radius:6px;display:none;"></div>
+            </div>
+        </div>
+        <!-- References Section -->
+        <div id="references" class="content-section">
+            <div class="content-card">
+                <h3>References</h3>
+                <div class="reference-item"><strong>Textbooks:</strong>
+                    <ul>
+                        <li>Simon Haykin, "Communication Systems"</li>
+                        <li>B.P. Lathi, "Modern Digital and Analog Communication Systems"</li>
+                        <li>Proakis, "Digital Communications"</li>
+                    </ul>
+                </div>
+                <div class="reference-item"><strong>Online Resources:</strong>
+                    <ul>
+                        <li>MIT OpenCourseWare - Digital Communications</li>
+                        <li>NPTEL Signals & Systems - BPSK Lectures</li>
+                        <li>All About Circuits - BPSK Tutorial</li>
+                    </ul>
+                </div>
+                <div class="reference-item"><strong>Protocols & Standards:</strong>
+                    <ul>
+                        <li>IEEE 802.15.4 (ZigBee physical layer)</li>
+                        <li>Satellite communications standards</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <!-- Feedback Section -->
+        <div id="feedback" class="content-section">
+            <div class="content-card">
+                <h3>Feedback</h3>
+                <p>Share your feedback to help us improve this BPSK virtual lab!</p>
+                <div class="form-group"><label>Name:</label><input type="text" id="feedbackName"></div>
+                <div class="form-group"><label>Email:</label><input type="email" id="feedbackEmail"></div>
+                <div class="form-group"><label>Rating:</label><select id="feedbackRating"><option value="5">5 - Excellent</option><option value="4">4 - Good</option><option value="3">3 - Average</option><option value="2">2 - Below Average</option><option value="1">1 - Poor</option></select></div>
+                <div class="form-group"><label>Comments:</label><textarea id="feedbackComments"></textarea></div>
+                <button class="btn btn-primary" onclick="submitFeedback()">Submit Feedback</button>
+                <div id="feedbackResult" style="margin-top:16px;padding:14px;border-radius:6px;display:none;"></div>
+            </div>
+        </div>
+    </div>
 </div>
-<button id="generateBtn" aria-label="Generate BPSK signal and update plots">Generate
-BPSK Signal</button>
-</aside>
-<main id="rightPanel" role="main" aria-label="Signal plots and results">
-<div id="plotNRZ" class="plotlyChart" aria-label="Input NRZ Bit Waveform"></div>
-<div id="plotCarrier" class="plotlyChart" aria-label="Carrier Waveform"></div>
-<div id="plotBPSKMod" class="plotlyChart" aria-label="BPSK Modulated Signal"></div>
-<div id="plotNoisyBPSK" class="plotlyChart" aria-label="Noisy BPSK Signal"></div>
-<div id="plotDemod" class="plotlyChart" aria-label="Demodulated Signal"></div>
-<div id="plotRecovered" class="plotlyChart" aria-label="Recovered Bit Waveform"></div>
-<section id="resultsSummary" aria-live="polite" aria-atomic="true">
-Original Bits: <span id="originalBits"></span><br />
-Recovered Bits: <span id="recoveredBits"></span><br />
-Bit Error Rate: <span id="ber"></span>
-</section>
-</main>
-</div>
-<!-- Plotly.js library (local fallback ready) -->
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
 <script>
-// Utility: Gaussian random number generator using Box-Muller transform
-function gaussianRandom() {
-let u = 0, v = 0;
-while (u === 0) u = Math.random(); // Caution to avoid 0
-while (v === 0) v = Math.random();
-return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+let simulationData = {};
+
+function showSection(sectionId) {
+    document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(sectionId).classList.add('active');
+    event.target.classList.add('active');
 }
-// Generate NRZ waveform (+1 for '1', -1 for '0')
-function generateNRZ(bits) {
-return [...bits].map(bit => bit === '1' ? 1 : -1);
+
+function generateSignal() {
+    const bits = document.getElementById('bitSequence').value;
+    const fc = parseFloat(document.getElementById('carrierFreq').value);
+    const amp = parseFloat(document.getElementById('amplitude').value);
+    const bitRate = parseFloat(document.getElementById('bitRate').value);
+    const sampleRate = parseFloat(document.getElementById('sampleRate').value);
+    const snr = parseFloat(document.getElementById('snr').value);
+
+    if (!/^[01]+$/.test(bits)) {
+        alert('Binary input must be 0s and 1s only!');
+        return;
+    }
+    const bitDuration = 1 / bitRate;
+    const samplesPerBit = Math.floor(sampleRate * bitDuration);
+    const totalSamples = bits.length * samplesPerBit;
+
+    const time = [];
+    const digitalSignal = [];
+    const carrier = [];
+    const bpskSignal = [];
+    let phase = 0;
+
+    for (let i = 0; i < totalSamples; i++) {
+        const t = i / sampleRate;
+        time.push(t);
+
+        const bitIdx = Math.floor(i / samplesPerBit);
+        const bit = parseInt(bits[bitIdx]);
+
+        digitalSignal.push(bit * amp);
+        carrier.push(amp * Math.sin(2 * Math.PI * fc * t));
+        // BPSK: phase 0 for bit 1, phase π for bit 0 (180° shift)
+        const ph = bit === 1 ? 0 : Math.PI;
+        bpskSignal.push(amp * Math.sin(2 * Math.PI * fc * t + ph));
+    }
+    const noisyBPSK = addNoise(bpskSignal, snr);
+    const demodulated = demodulateBPSK(noisyBPSK, fc, sampleRate, samplesPerBit, bits.length, amp);
+
+    simulationData = {
+        bits, time, digitalSignal, carrier, bpskSignal: noisyBPSK, demodulated, samplesPerBit, fc, amp, bitRate, sampleRate
+    };
+
+    plotDigitalSignal();
+    plotCarrierSignal();
+    plotBPSKSignal();
+    plotDemodulatedSignal();
+    updateResultSummary();
+    alert('BPSK signal generated!');
 }
-// Generate time vector array for the entire signal duration
-function generateTimeVector(numBits, fs, bitDuration) {
-const totalSamples = numBits * fs * bitDuration;
-const time = new Array(totalSamples);
-for(let i = 0; i < totalSamples; i++) {
-time[i] = i / fs;
-}
-return time;
-}
-// Expand NRZ bits to sampled level sequence
-function expandNRZ(nrzBits, samplesPerBit) {
-const expanded = new Array(nrzBits.length * samplesPerBit);
-for(let i = 0; i < nrzBits.length; i++) {
-expanded.fill(nrzBits[i], i * samplesPerBit, (i + 1) * samplesPerBit);
-}
-return expanded;
-}
-// Generate carrier waveform: A * sin(2*pi*f*t)
-function generateCarrier(timeVector, fc, A) {
-const carrier = new Array(timeVector.length);
-for(let i = 0; i < timeVector.length; i++) {
-carrier[i] = A * Math.sin(2 * Math.PI * fc * timeVector[i]);
-}
-return carrier;
-}
-// Modulate NRZ with carrier (element-wise multiplication)
-function bpskModulate(expandedNRZ, carrier) {
-const modulated = new Array(expandedNRZ.length);
-for(let i = 0; i < expandedNRZ.length; i++) {
-modulated[i] = expandedNRZ[i] * carrier[i];
-}
-return modulated;
-}
-// Add AWGN noise based on SNR in dB
+
 function addNoise(signal, snrDB) {
-const signalPower = signal.reduce((acc, val) => acc + val*val, 0) / signal.length;
-const snrLinear = Math.pow(10, snrDB / 10);
-const noisePower = signalPower / snrLinear;
-const noiseStd = Math.sqrt(noisePower);
-const noisySignal = new Array(signal.length);
-for(let i = 0; i < signal.length; i++) {
-noisySignal[i] = signal[i] + gaussianRandom() * noiseStd;
+    const snrLinear = Math.pow(10, snrDB / 10);
+    const signalPower = signal.reduce((sum, val) => sum + val * val, 0) / signal.length;
+    const noisePower = signalPower / snrLinear;
+    const noiseStd = Math.sqrt(noisePower);
+
+    return signal.map(val => val + (Math.random() - 0.5) * 2 * noiseStd);
 }
-return noisySignal;
+
+function demodulateBPSK(signal, fc, sampleRate, samplesPerBit, numBits, amp) {
+    const demodBits = [];
+    const demodSignal = [];
+    for (let i = 0; i < numBits; i++) {
+        const start = i * samplesPerBit;
+        const end = start + samplesPerBit;
+        const segment = signal.slice(start, end);
+        let corr = 0;
+        for (let j = 0; j < segment.length; j++) {
+            const t = (start + j) / sampleRate;
+            corr += segment[j] * Math.sin(2 * Math.PI * fc * t);
+        }
+        const bit = corr >= 0 ? 1 : 0;
+        demodBits.push(bit);
+        for (let j = 0; j < samplesPerBit; j++) demodSignal.push(bit * amp);
+    }
+    return { bits: demodBits.join(''), signal: demodSignal };
 }
-// Moving average filter for lowpass smoothing
-function movingAverage(signal, windowSize) {
-const filtered = new Array(signal.length);
-const half = Math.floor(windowSize / 2);
-for(let i = 0; i < signal.length; i++) {
-let sum = 0;
-let count = 0;
-for(let j = i - half; j <= i + half; j++) {
-if(j >= 0 && j < signal.length) {
-sum += signal[j];
-count++;
+
+function plotDigitalSignal() {
+    const { time, digitalSignal, bits, samplesPerBit, amp, sampleRate } = simulationData;
+    const annotations = bits.split('').map((bit, i) => ({
+        x: (i * samplesPerBit + samplesPerBit / 2) / sampleRate,
+        y: amp * 1.3,
+        text: bit,
+        showarrow: false,
+        font: { size: 16, color: '#38a3a5' }
+    }));
+    const trace = {
+        x: time, y: digitalSignal, type: 'scatter', mode: 'lines',
+        line: {color: '#38a3a5', width: 3, shape: 'hv'}, name: 'Digital Input'
+    };
+    Plotly.newPlot('digitalSignal', [trace], {
+        xaxis:{title:'Time (s)'}, yaxis:{title:'Amplitude (V)'},
+        annotations: annotations,
+        margin:{l:50,r:30,t:20,b:50},
+        plot_bgcolor:'#ecf8f9', paper_bgcolor:'#ecf8f9'
+    }, {responsive:true,displayModeBar:true});
 }
+
+function plotCarrierSignal() {
+    const { time, carrier } = simulationData;
+    const trace = {
+        x: time, y: carrier, type: 'scatter', mode: 'lines',
+        line: {color: '#22577a', width: 2}, name: 'Carrier'
+    };
+    Plotly.newPlot('carrierSignal', [trace], {
+        xaxis:{title:'Time (s)'}, yaxis:{title:'Amplitude (V)'},
+        margin:{l:50,r:30,t:20,b:50},
+        plot_bgcolor:'#ecf8f9', paper_bgcolor:'#ecf8f9'
+    }, {responsive:true,displayModeBar:true});
 }
-filtered[i] = sum / count;
+
+function plotBPSKSignal() {
+    const { time, bpskSignal } = simulationData;
+    const trace = {
+        x: time, y: bpskSignal, type: 'scatter', mode: 'lines',
+        line: {color: '#ff00ff', width: 2}, name: 'BPSK'
+    };
+    Plotly.newPlot('bpskSignal', [trace], {
+        xaxis:{title:'Time (s)'}, yaxis:{title:'Amplitude (V)'},
+        margin:{l:50,r:30,t:20,b:50},
+        plot_bgcolor:'#ecf8f9', paper_bgcolor:'#ecf8f9'
+    }, {responsive:true,displayModeBar:true});
 }
-return filtered;
+
+function plotDemodulatedSignal() {
+    const { time, demodulated, samplesPerBit, amp, sampleRate } = simulationData;
+    const annotations = demodulated.bits.split('').map((bit, i) => ({
+        x: (i * samplesPerBit + samplesPerBit / 2) / sampleRate,
+        y: amp * 1.3,
+        text: bit,
+        showarrow: false,
+        font: { size: 16, color: '#43d07d' }
+    }));
+    const trace = {
+        x: time, y: demodulated.signal, type: 'scatter', mode: 'lines',
+        line: {color: '#43d07d', width: 3, shape:'hv'}, name: 'Demodulated'
+    };
+    Plotly.newPlot('demodulatedSignal', [trace], {
+        xaxis:{title:'Time (s)'}, yaxis:{title:'Amplitude (V)'},
+        annotations: annotations,
+        margin:{l:50,r:30,t:20,b:50},
+        plot_bgcolor:'#ecf8f9', paper_bgcolor:'#ecf8f9'
+    }, {responsive:true,displayModeBar:true});
 }
-// Demodulate BPSK: multiply by carrier, filter, sample, decide bits
-function bpskDemodulate(signal, carrier, samplesPerBit) {
-// Step 1: Multiply by carrier
-const mixed = new Array(signal.length);
-for(let i = 0; i < signal.length; i++) {
-mixed[i] = signal[i] * carrier[i];
+
+function updateResultSummary() {
+    const { bits, demodulated, fc, bitRate } = simulationData;
+    // Calculate BER
+    let errors = 0;
+    for (let i = 0; i < bits.length; i++) {
+        if (bits[i] !== demodulated.bits[i]) errors++;
+    }
+    const ber = (errors / bits.length).toFixed(4);
+    const bandwidth = (2 * bitRate).toFixed(2);
+    document.getElementById('resultInputBits').textContent = bits;
+    document.getElementById('resultDemodBits').textContent = demodulated.bits;
+    document.getElementById('resultBER').textContent = ber;
+    document.getElementById('resultBandwidth').textContent = bandwidth + ' Hz';
+    document.getElementById('resultModIndex').textContent = '1 (π phase shift)';
 }
-// Step 2: Lowpass filter (moving average with half bit duration window)
-const windowSize = Math.floor(samplesPerBit / 2) || 1;
-const filtered = movingAverage(mixed, windowSize);
-// Step 3: Sample at middle of each bit duration and decide
-const numBits = Math.floor(signal.length / samplesPerBit);
-const bits = new Array(numBits);
-for(let i = 0; i < numBits; i++) {
-const sampleIndex = i * samplesPerBit + Math.floor(samplesPerBit / 2);
-bits[i] = filtered[sampleIndex] > 0 ? '1' : '0';
+
+function runSimulation() {
+    if (!simulationData.bits) {
+        alert('Generate the signal first!');
+        return;
+    }
+    alert('BPSK simulation is running! All plots updated.');
 }
-return bits;
+
+function resetSimulation() {
+    simulationData = {};
+    // Clear all plots and results
+    Plotly.purge('digitalSignal');
+    Plotly.purge('carrierSignal');
+    Plotly.purge('bpskSignal');
+    Plotly.purge('demodulatedSignal');
+    document.getElementById('resultInputBits').textContent = '-';
+    document.getElementById('resultDemodBits').textContent = '-';
+    document.getElementById('resultBER').textContent = '-';
+    document.getElementById('resultBandwidth').textContent = '-';
+    document.getElementById('resultModIndex').textContent = '-';
+    alert('Simulation reset!');
 }
-// Calculate Bit Error Rate (BER)
-function calculateBER(original, recovered) {
-let errors = 0;
-const length = original.length;
-for(let i = 0; i < length; i++) {
-if(original[i] !== recovered[i]) errors++;
+
+function checkPreTest() {
+    const answers = {q1:'a',q2:'a',q3:'c',q4:'c',q5:'b'};
+    let score = 0, total = Object.keys(answers).length;
+    for (let q in answers) {
+        const selected = document.querySelector(`input[name="${q}"]:checked`);
+        if (selected && selected.value === answers[q]) score++;
+    }
+    const pct = ((score / total) * 100).toFixed(0);
+    const resultDiv = document.getElementById('preTestResult');
+    resultDiv.style.display = 'block';
+    if (pct >= 70) {
+        resultDiv.style.background = '#dbf6e9';
+        resultDiv.style.border = '2px solid #43d07d';
+        resultDiv.innerHTML = `<b style="color:#43d07d;">✓ Great!</b> You scored ${score}/${total} (${pct}%).`;
+    } else if (pct >= 50) {
+        resultDiv.style.background = '#fff7e6';
+        resultDiv.style.border = '2px solid #ffb027';
+        resultDiv.innerHTML = `<b style="color:#ffb027;">⚠ Good Try!</b> You scored ${score}/${total} (${pct}%). review theory.`;
+    } else {
+        resultDiv.style.background = '#ffcccc';
+        resultDiv.style.border = '2px solid #dc2626';
+        resultDiv.innerHTML = `<b style="color:#dc2626;">✗ Needs Improvement</b> (${score}/${total}, ${pct}%).`;
+    }
 }
-const percent = (errors / length) * 100;
-return {errors, total: length, percentage: percent};
+
+function checkPostTest() {
+    const answers = {pq1:'a',pq2:'b',pq3:'a',pq4:'b',pq5:'a'};
+    let score = 0, total = Object.keys(answers).length;
+    for (let q in answers) {
+        const selected = document.querySelector(`input[name="${q}"]:checked`);
+        if (selected && selected.value === answers[q]) score++;
+    }
+    const pct = ((score / total) * 100).toFixed(0);
+    const resultDiv = document.getElementById('postTestResult');
+    resultDiv.style.display = 'block';
+    if (pct >= 80) {
+        resultDiv.style.background = '#dbf6e9';
+        resultDiv.style.border = '2px solid #43d07d';
+        resultDiv.innerHTML = `<b style="color:#43d07d;">Outstanding!</b> ${score}/${total} (${pct}%).`;
+    } else if (pct >= 60) {
+        resultDiv.style.background = '#fff7e6';
+        resultDiv.style.border = '2px solid #ffb027';
+        resultDiv.innerHTML = `<b style="color:#ffb027;">Good!</b> ${score}/${total} (${pct}%).`;
+    } else {
+        resultDiv.style.background = '#ffcccc';
+        resultDiv.style.border = '2px solid #dc2626';
+        resultDiv.innerHTML = `<b style="color:#dc2626;">Keep Practicing!</b> (${score}/${total}, ${pct}%).`;
+    }
 }
-// Plot waveform using Plotly, with branding hidden
-function plotSignal(divId, xData, yData, title, xLabel, yLabel) {
-const trace = {
-x: xData,
-y: yData,
-mode: 'lines',
-line: {color: '#0074D9'}
-};
-const layout = {
-title: {text: title, font: {size: 16}},
-margin: {t: 30, l: 40, r: 15, b: 40},
-xaxis: {title: xLabel, zeroline: false},
-yaxis: {title: yLabel, zeroline: false},
-font: {family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", size: 12},
-plot_bgcolor: '#fefefe',
-paper_bgcolor: '#fefefe',
-};
-const config = {
-displayModeBar: false,
-displaylogo: false,
-responsive: true
-};
-Plotly.newPlot(divId, [trace], layout, config);
+
+function submitFeedback() {
+    const name = document.getElementById('feedbackName').value;
+    const email = document.getElementById('feedbackEmail').value;
+    const rating = document.getElementById('feedbackRating').value;
+    const comments = document.getElementById('feedbackComments').value;
+
+    if (!name || !email || !comments) {
+        alert('Fill all fields before submitting.');
+        return;
+    }
+    const resultDiv = document.getElementById('feedbackResult');
+    resultDiv.style.display = 'block';
+    resultDiv.style.background = '#dbf6e9';
+    resultDiv.style.border = '2px solid #43d07d';
+    resultDiv.innerHTML = `<b>Thank you, ${name}! </b>Your feedback (Rating: ${rating}/5) has been recorded.`;
+    // Clear form
+    document.getElementById('feedbackName').value = '';
+    document.getElementById('feedbackEmail').value = '';
+    document.getElementById('feedbackComments').value = '';
+    document.getElementById('feedbackRating').value = '5';
 }
-// Generate rectangular waveform for NRZ and recovered bits
-function plotRectangularSignal(divId, samplesPerBit, bits, title, xLabel) {
-// Construct x and y arrays for rectangular waveform steps
-const x = [];
-const y = [];
-for(let i = 0; i < bits.length; i++) {
-const start = i;
-const end = i + 1;
-const level = bits[i] === '1' ? 1 : -1;
-x.push(start, end);
-y.push(level, level);
-}
-// Trim last step to match length
-plotSignal(divId,
-x,
-y,
-title,
-xLabel,
-'Amplitude');
-}
-// Main function: runs full processing chain and updates plots + results
-function generateBPSK() {
-// Get UI values
-const bitSeqRaw = bitSeq.value.trim();
-if (!/^[01]*$/.test(bitSeqRaw) || bitSeqRaw.length === 0) {
-alert('Invalid bit sequence! Only 0 and 1 characters allowed.');
-bitSeq.focus();
-return;
-}
-const bits = bitSeqRaw;
-const carrierFreqVal = Number(carrierFreq.value);
-const samplingFreqVal = Number(samplingFreq.value);
-const amplitudeVal = Number(amplitude.value);
-if (carrierFreqVal <= 0 || samplingFreqVal <= carrierFreqVal * 10) {
-alert('Ensure carrier frequency is positive and sampling frequency is at least 10 times the
-carrier frequency.');
-return;
-}
-if (amplitudeVal <= 0) {
-alert('Amplitude must be positive.');
-return;
-}
-const noiseEnabledVal = noiseToggle.checked;
-const snrVal = Number(snrSlider.value);
-const bitDuration = 1; // seconds per bit
-const samplesPerBit = Math.floor(samplingFreqVal * bitDuration);
-// Step A: NRZ coding
-const nrzBits = generateNRZ(bits);
-// Step B: Time vector
-const timeVec = generateTimeVector(bits.length, samplingFreqVal, bitDuration);
-// Steps C & D: Carrier + BPSK modulate
-const carrierWave = generateCarrier(timeVec, carrierFreqVal, amplitudeVal);
-const expandedNRZ = expandNRZ(nrzBits, samplesPerBit);
-const bpskSignal = bpskModulate(expandedNRZ, carrierWave);
-// Step E: Add noise if toggled on
-let noisySignal = bpskSignal;
-if (noiseEnabledVal) {
-noisySignal = addNoise(bpskSignal, snrVal);
-}
-// Step F: Demodulate signal
-const recoveredBits = bpskDemodulate(noisySignal, carrierWave, samplesPerBit);
-// Step G: Calculate BER
-const berStats = calculateBER(bits, recoveredBits);
-// Plotting
-plotRectangularSignal('plotNRZ', samplesPerBit, bits, 'Input NRZ Bit Waveform', 'Bit Time
-(s)');
-plotSignal('plotCarrier', timeVec, carrierWave, 'Carrier Waveform', 'Time (s)', 'Amplitude');
-plotSignal('plotBPSKMod', timeVec, bpskSignal, 'BPSK Modulated Signal', 'Time (s)',
-'Amplitude');
-if (noiseEnabledVal) {
-plotSignal('plotNoisyBPSK', timeVec, noisySignal, 'Noisy BPSK Signal', 'Time (s)',
-'Amplitude');
-} else {
-Plotly.purge('plotNoisyBPSK');
-const div = document.getElementById('plotNoisyBPSK');
-div.innerHTML = '<div style="padding: 20px; text-align:center; color:#999;">Noise
-disabled</div>';
-}
-plotSignal('plotDemod', timeVec, bpskDemodulate(noisySignal, carrierWave, 1),
-'Demodulated Signal', 'Time (s)', 'Amplitude');
-plotRectangularSignal('plotRecovered', samplesPerBit, recoveredBits.join(''), 'Recovered Bit
-Waveform', 'Bit Time (s)');
-// Results text
-originalBits.textContent = bits;
-recoveredBits.textContent = recoveredBits.join('');
-ber.textContent = `${berStats.errors} errors out of ${berStats.total} bits
-(${berStats.percentage.toFixed(2)}%)`;
-}
-// DOM elements caching
-const bitSeq = document.getElementById('bitSeq');
-const carrierFreq = document.getElementById('carrierFreq');
-const samplingFreq = document.getElementById('samplingFreq');
-const amplitude = document.getElementById('amplitude');
-const noiseToggle = document.getElementById('noiseToggle');
-const snrSlider = document.getElementById('snrSlider');
-const snrValue = document.getElementById('snrValue');
-const generateBtn = document.getElementById('generateBtn');
-const originalBits = document.getElementById('originalBits');
-const recoveredBits = document.getElementById('recoveredBits');
-const ber = document.getElementById('ber');
-// Update SNR slider UI and enable/disable based on noise toggle
-noiseToggle.addEventListener('change', () => {
-snrSlider.disabled = !noiseToggle.checked;
-generateBPSK();
-});
-snrSlider.addEventListener('input', () => {
-snrValue.textContent = snrSlider.value;
-});
-generateBtn.addEventListener('click', generateBPSK);
-// Generate initial plots on page load
-window.onload = () => {
-generateBPSK();
-};
 </script>
 </body>
 </html>
