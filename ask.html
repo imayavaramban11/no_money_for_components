@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASK Virtual Lab - PTU</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.27.0/plotly.min.js"></script>
+
+    <!-- 🔥 SAME CSS AS FSK (UNCHANGED) -->
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f0f4f8; display: flex; flex-direction: column; height: 100vh; }
+        .header { background: linear-gradient(135deg, #1a5490, #2d7ab8); color: white; padding: 15px 30px; }
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+        .sidebar { width: 220px; background: white; box-shadow: 2px 0 8px rgba(0,0,0,0.1); }
+        .nav-item { padding: 14px 25px; cursor: pointer; border-left: 4px solid transparent; }
+        .nav-item.active { background: #e8f1f8; color: #1a5490; border-left-color: #1a5490; font-weight: 600; }
+        .content-area { flex: 1; background: #f0f4f8; overflow-y: auto; }
+        .content-section { display: none; padding: 30px; }
+        .content-section.active { display: block; }
+        .content-card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        h3 { color: #1a5490; margin-bottom: 15px; }
+        .controls-section { background: #f8fafc; padding: 20px; border-radius: 6px; margin-bottom: 20px; }
+        .control-row { display: flex; gap: 15px; flex-wrap: wrap; }
+        .control-group { display: flex; flex-direction: column; min-width: 140px; }
+        .btn { padding: 8px 18px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-primary { background: #1a5490; color: white; }
+        .plot-container { background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+    </style>
+</head>
+
+<body>
+<div class="header">
+    <h1>Puducherry Technological University</h1>
+    <h2>Virtual Lab – Amplitude Shift Keying (ASK)</h2>
+</div>
+
+<div class="main-container">
+    <div class="sidebar">
+        <div class="nav-item active" onclick="showSection('simulation')">● Simulation</div>
+        <div class="nav-item" onclick="showSection('aim')">● Aim</div>
+        <div class="nav-item" onclick="showSection('theory')">● Theory</div>
+        <div class="nav-item" onclick="showSection('procedure')">● Procedure</div>
+    </div>
+
+    <div class="content-area">
+        <!-- SIMULATION -->
+        <div id="simulation" class="content-section active">
+            <div class="content-card">
+                <h3>ASK Simulation</h3>
+
+                <div class="controls-section">
+                    <div class="control-row">
+                        <div class="control-group">
+                            <label>Binary Input</label>
+                            <input type="text" id="bits" value="101101">
+                        </div>
+                        <div class="control-group">
+                            <label>Carrier Frequency (Hz)</label>
+                            <input type="number" id="fc" value="1000">
+                        </div>
+                        <div class="control-group">
+                            <label>Amplitude for '1'</label>
+                            <input type="number" id="A1" value="1">
+                        </div>
+                        <div class="control-group">
+                            <label>Amplitude for '0'</label>
+                            <input type="number" id="A0" value="0">
+                        </div>
+                        <div class="control-group">
+                            <label>Bit Rate (bps)</label>
+                            <input type="number" id="bitRate" value="50">
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="generateASK()">Generate</button>
+                </div>
+
+                <div class="plot-container">
+                    <h4>Digital Input</h4>
+                    <div id="digital"></div>
+                </div>
+
+                <div class="plot-container">
+                    <h4>ASK Modulated Signal</h4>
+                    <div id="ask"></div>
+                </div>
+
+                <div class="plot-container">
+                    <h4>Demodulated Output</h4>
+                    <div id="demod"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AIM -->
+        <div id="aim" class="content-section">
+            <div class="content-card">
+                <h3>Aim</h3>
+                <p>To study Amplitude Shift Keying (ASK) modulation and demodulation.</p>
+            </div>
+        </div>
+
+        <!-- THEORY -->
+        <div id="theory" class="content-section">
+            <div class="content-card">
+                <h3>Theory</h3>
+                <p>ASK is a digital modulation technique where the amplitude of the carrier varies according to the binary input.</p>
+                <p>Binary ‘1’ → High amplitude</p>
+                <p>Binary ‘0’ → Low or zero amplitude</p>
+            </div>
+        </div>
+
+        <!-- PROCEDURE -->
+        <div id="procedure" class="content-section">
+            <div class="content-card">
+                <h3>Procedure</h3>
+                <ol>
+                    <li>Enter binary data</li>
+                    <li>Set carrier frequency and amplitudes</li>
+                    <li>Click Generate</li>
+                    <li>Observe modulation and demodulation</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showSection(id) {
+    document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    event.target.classList.add('active');
+}
+
+function generateASK() {
+    const bits = document.getElementById('bits').value;
+    const fc = +document.getElementById('fc').value;
+    const A1 = +document.getElementById('A1').value;
+    const A0 = +document.getElementById('A0').value;
+    const br = +document.getElementById('bitRate').value;
+
+    const Tb = 1 / br;
+    const fs = 10000;
+    const samples = Math.floor(Tb * fs);
+
+    let t = [], digital = [], ask = [], demod = [];
+
+    bits.split('').forEach((b, i) => {
+        for (let n = 0; n < samples; n++) {
+            let time = (i * samples + n) / fs;
+            t.push(time);
+
+            digital.push(b);
+            let amp = b === '1' ? A1 : A0;
+            let sig = amp * Math.sin(2 * Math.PI * fc * time);
+            ask.push(sig);
+
+            demod.push(sig > 0.3 ? 1 : 0);
+        }
+    });
+
+    Plotly.newPlot('digital', [{x:t,y:digital,type:'scatter',line:{shape:'hv'}}]);
+    Plotly.newPlot('ask', [{x:t,y:ask,type:'scatter'}]);
+    Plotly.newPlot('demod', [{x:t,y:demod,type:'scatter',line:{shape:'hv'}}]);
+}
+</script>
+</body>
+</html>
