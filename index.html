@@ -25,6 +25,7 @@ body {
     justify-content: center;
 }
 
+/* MAIN CONTAINER */
 .container {
     max-width: 1100px;
     padding: 32px;
@@ -49,11 +50,11 @@ h3 {
     color: #93c5fd;
 }
 
-/* 🔥 GRID FIX — FORCE SINGLE ROW */
+/* CARD GRID */
 .cards {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
+    gap: 36px; /* ✅ small gap between FSK / ASK / BPSK */
     justify-items: center;
 }
 
@@ -106,7 +107,35 @@ h3 {
     border-color: #0ea5e9;
 }
 
-/* 📱 MOBILE FALLBACK */
+/* 🔁 RUNNING TEXT (RIGHT → LEFT) */
+.ticker {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    overflow: hidden;
+    background: rgba(15, 23, 42, 0.95);
+    border-top: 1px solid #1f2937;
+    padding: 10px 0;
+}
+
+.ticker-text {
+    display: inline-block;
+    white-space: nowrap;
+    font-size: 14px;
+    color: #93c5fd;
+    animation: scroll-right-left 15s linear infinite;
+}
+
+@keyframes scroll-right-left {
+    0% {
+        transform: translateX(100%);
+    }
+    100% {
+        transform: translateX(-100%);
+    }
+}
+
+/* RESPONSIVE */
 @media (max-width: 900px) {
     .cards {
         grid-template-columns: repeat(2, 1fr);
@@ -122,14 +151,13 @@ h3 {
 </head>
 
 <body>
-<div class="container">
 
+<div class="container">
     <h1>PUDUCHERRY TECHNOLOGICAL UNIVERSITY</h1>
     <h2>Department of Electronics & Communication Engineering</h2>
     <h3>Digital Communication Virtual Laboratory</h3>
 
     <div class="cards">
-
         <div class="card">
             <h4>FSK Virtual Lab</h4>
             <p>Frequency Shift Keying (FSK)<br>modulation and demodulation</p>
@@ -147,9 +175,15 @@ h3 {
             <p>Binary Phase Shift Keying (BPSK)<br>modulation and demodulation</p>
             <a href="bpsk.html" class="btn">Open BPSK Lab</a>
         </div>
-
     </div>
-
 </div>
+
+<!-- 🚧 RUNNING STATUS BAR -->
+<div class="ticker">
+    <div class="ticker-text">
+        🚧 Site under development — New virtual labs and features coming soon 🚧
+    </div>
+</div>
+
 </body>
 </html>
