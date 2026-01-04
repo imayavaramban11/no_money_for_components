@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PTU ECE - Virtual Lab</title>
-    <style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PTU ECE - Virtual Lab</title>
+
+<style>
 body {
     font-family: Arial, sans-serif;
     margin: 0;
     min-height: 100vh;
 
-    /* 🔥 Background image */
-    background: 
+    background:
         linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.85)),
         url("ptuece.jpg");
 
@@ -25,93 +25,130 @@ body {
     justify-content: center;
 }
 
-        .container {
-            max-width: 800px;
-            padding: 24px;
-            text-align: center;
-        }
-        h1 {
-            font-size: 28px;
-            margin-bottom: 8px;
-        }
-        h2 {
-            font-size: 18px;
-            font-weight: normal;
-            color: #9ca3af;
-            margin-bottom: 28px;
-        }
-        .cards {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-            justify-content: center;
-        }
-        .card {
-            background: #111827;
-            border-radius: 12px;
-            padding: 20px 22px;
-            width: 260px;
-            border: 1px solid #1f2937;
-            text-align: left;
-        }
-        .card h3 {
-            margin-top: 0;
-            margin-bottom: 8px;
-            font-size: 20px;
-            color: #38bdf8;
-        }
-        .card p {
-            margin: 0 0 14px;
-            font-size: 14px;
-            color: #9ca3af;
-        }
-        .btn {
-            display: inline-block;
-            padding: 8px 14px;
-            border-radius: 999px;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 600;
-            border: 1px solid #38bdf8;
-            color: #0f172a;
-            background: #38bdf8;
-        }
-        .btn:hover {
-            background: #0ea5e9;
-            border-color: #0ea5e9;
-        }
-        .footer {
-            margin-top: 20px;
-            font-size: 12px;
-            color: #6b7280;
-        }
-    </style>
+.container {
+    max-width: 1100px;
+    padding: 32px;
+    text-align: center;
+}
+
+h1 {
+    font-size: 30px;
+    margin-bottom: 6px;
+}
+
+h2 {
+    font-size: 18px;
+    font-weight: normal;
+    color: #cbd5f5;
+    margin-bottom: 10px;
+}
+
+h3 {
+    font-size: 20px;
+    margin-bottom: 35px;
+    color: #93c5fd;
+}
+
+/* 🔥 GRID FIX — FORCE SINGLE ROW */
+.cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    justify-items: center;
+}
+
+.card {
+    background: rgba(17, 24, 39, 0.9);
+    border-radius: 14px;
+    padding: 24px;
+    width: 100%;
+    max-width: 300px;
+    border: 1px solid #1f2937;
+    text-align: left;
+    backdrop-filter: blur(6px);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+}
+
+.card h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 20px;
+    color: #38bdf8;
+}
+
+.card p {
+    margin: 0 0 18px;
+    font-size: 14px;
+    color: #9ca3af;
+    line-height: 1.5;
+}
+
+.btn {
+    display: inline-block;
+    padding: 9px 18px;
+    border-radius: 999px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    border: 1px solid #38bdf8;
+    color: #0f172a;
+    background: #38bdf8;
+    transition: all 0.25s ease;
+}
+
+.btn:hover {
+    background: #0ea5e9;
+    border-color: #0ea5e9;
+}
+
+/* 📱 MOBILE FALLBACK */
+@media (max-width: 900px) {
+    .cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .cards {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
 </head>
+
 <body>
 <div class="container">
+
     <h1>PUDUCHERRY TECHNOLOGICAL UNIVERSITY</h1>
     <h2>Department of Electronics & Communication Engineering</h2>
     <h3>Digital Communication Virtual Laboratory</h3>
 
     <div class="cards">
-    <div class="card">
-        <h4>FSK Virtual Lab</h4>
-        <p>Frequency Shift Keying (FSK)<br>modulation and demodulation</p>
-        <a href="fsk.html" class="btn">Open FSK Lab</a>
-    </div>
 
-    <div class="card">
-        <h4>ASK Virtual Lab</h4>
-        <p>Amplitude Shift Keying (ASK)<br>modulation and demodulation</p>
-        <a href="ask.html" class="btn">Open ASK Lab</a>
-    </div>
+        <div class="card">
+            <h4>FSK Virtual Lab</h4>
+            <p>Frequency Shift Keying (FSK)<br>modulation and demodulation</p>
+            <a href="fsk.html" class="btn">Open FSK Lab</a>
+        </div>
 
-    <div class="card">
-        <h4>BPSK Virtual Lab</h4>
-        <p>Binary Phase Shift Keying (BPSK)<br>modulation and demodulation</p>
-        <a href="bpsk.html" class="btn">Open BPSK Lab</a>
+        <div class="card">
+            <h4>ASK Virtual Lab</h4>
+            <p>Amplitude Shift Keying (ASK)<br>modulation and demodulation</p>
+            <a href="ask.html" class="btn">Open ASK Lab</a>
+        </div>
+
+        <div class="card">
+            <h4>BPSK Virtual Lab</h4>
+            <p>Binary Phase Shift Keying (BPSK)<br>modulation and demodulation</p>
+            <a href="bpsk.html" class="btn">Open BPSK Lab</a>
+        </div>
+
     </div>
-</div>
 
 </div>
 </body>
